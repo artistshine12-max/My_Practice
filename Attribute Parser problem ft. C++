@@ -1,0 +1,72 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <map>
+#include <sstream>
+
+using namespace std;
+
+int main() {
+    int n, q;
+    if (!(cin >> n >> q)) return 0;
+    cin.ignore(); // Clear newline buffer from cin
+
+    map<string, string> hrml_map;
+    vector<string> tag_stack;
+
+    for (int i = 0; i < n; ++i) {
+        string line;
+        getline(cin, line);
+        
+        // Clean characters out to make tokenization uniform
+        for (char &c : line) {
+            if (c == '<' || c == '>' || c == '"' || c == '=') {
+                c = ' ';
+            }
+        }
+
+        stringstream ss(line);
+        string token;
+        ss >> token; // Extracts the tag name or "/"
+
+        if (token.empty()) continue;
+
+        if (token[0] == '/') {
+            // Closing tag: Remove the last active tag from hierarchy
+            if (!tag_stack.empty()) {
+                tag_stack.pop_back();
+            }
+        } else {
+            // Opening tag: Add tag to stack hierarchy
+            tag_stack.push_back(token);
+
+            // Construct current nested tag prefix path (e.g., "tag1.tag2")
+            string current_prefix = "";
+            for (size_t j = 0; j < tag_stack.size(); ++j) {
+                current_prefix += tag_stack[j] + (j == tag_stack.size() - 1 ? "" : ".");
+            }
+
+            // Parse any remaining attribute keys and values on this line
+            string attr_name, attr_value;
+            while (ss >> attr_name >> attr_value) {
+                string final_key = current_prefix + "~" + attr_name;
+                hrml_map[final_key] = attr_value;
+            }
+        }
+    }
+
+    // Process and answer the queries
+    for (int i = 0; i < q; ++i) {
+        string query;
+        getline(cin, query);
+
+        auto it = hrml_map.find(query);
+        if (it != hrml_map.end()) {
+            cout << it->second << "\n";
+        } else {
+            cout << "Not Found!\n";
+        }
+    }
+
+    return 0;
+}
